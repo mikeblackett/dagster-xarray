@@ -1,0 +1,58 @@
+[project]
+name = "dagster-xarray"
+version = "0.0.0"
+description = "Dagster xarray integration"
+authors = [
+    {name = "Mike Blackett", email = "27811528+mikeblackett@users.noreply.github.com"},
+]
+dependencies = ["xarray>=2025.6.1", "dagster>=1.10.20", "dask>=2025.5.1"]
+requires-python = ">=3.12,<3.13"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.ruff]
+line-length = 79
+indent-width = 4
+extend-include = ["*.ipynb"]
+
+[tool.ruff.format]
+docstring-code-format = false
+docstring-code-line-length = "dynamic"
+indent-style = "space"
+line-ending = "auto"
+quote-style = "single"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+preview = true
+
+
+
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "-e file:///home/mike/Documents/Programming/xarray-jsonschema#egg=xarray-jsonschema",
+]
+[dependency-groups]
+dev = [
+    "pyright>=1.1.402",
+    "ruff>=0.11.13",
+    "coverage>=7.9.1",
+    "pytest>=8.4.0",
+    "hypothesis>=6.135.10",
+    "sphinx>=8.2.3",
+    "dagster-webserver>=1.10.20",
+]
+
+[tool.pyright]
+extraPaths = [
+    "/home/mike/Documents/Programming/xarray-jsonschema/",
+]
