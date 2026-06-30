@@ -7,9 +7,9 @@ from typing import Any, Literal, TypeIs, cast
 import dagster as dg
 import xarray as xr
 from upath import UPath
-from xarray.backends.api import T_NetcdfEngine
 
-type Engine = Literal["netcdf4", "h5netcdf", "scipy", "zarr"]
+type NetcdfEngine = Literal["netcdf4", "scipy", "h5netcdf"]
+type Engine = NetcdfEngine | Literal["zarr"]
 
 DEFAULT_NETCDF_ENGINE: Engine = "netcdf4"
 EXTENSION_FOR_ENGINE: dict[Engine, str] = {
@@ -122,7 +122,7 @@ class NetCDFXarrayIOManager(XarrayIOManager):
             )
         kwargs = self._resolve_output_options(context)
         mode = NetCDFMode(kwargs.pop("mode", "w")).value
-        engine = cast(T_NetcdfEngine, self.engine)
+        engine = cast(NetcdfEngine, self.engine)
         obj.drop_encoding().to_netcdf(
             path=path, compute=True, engine=engine, mode=mode, **kwargs
         )
