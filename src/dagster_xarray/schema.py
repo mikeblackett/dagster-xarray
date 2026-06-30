@@ -1,8 +1,9 @@
 from collections.abc import Callable
 import itertools
 import dagster as dg
-import pandera.xarray as pa
+import dagster._check as check
 import pandera.errors as pa_errors
+import pandera.xarray as pa
 import xarray as xr
 
 type DagsterPanderaXarraySchema = pa.DataArraySchema | pa.DatasetSchema
@@ -62,21 +63,21 @@ def _pandera_schema_to_type_check_fn(
     def type_check_fn(_context, value: object) -> dg.TypeCheck:
         if isinstance(value, VALID_XARRAY_CLASSES):
             try:
-                # `lazy` instructs pandera to capture every (not just the first) validation error
                 if isinstance(schema, pa.DataArraySchema):
-                    da = dg.check.inst(
+                    da = check.inst(
                         value, xr.DataArray, "Must be a xarray DataArray."
                     )
+                    # `lazy` instructs pandera to capture every (not just the first) validation error
                     schema.validate(da, lazy=True)
                 elif isinstance(schema, pa.DatasetSchema):
-                    ds = dg.check.inst(
+                    ds = check.inst(
                         value,
                         xr.Dataset,
                         "Must be a xarray Dataset.",
                     )
                     schema.validate(ds, lazy=True)
                 else:
-                    dg.check.failed(
+                    check.failed(
                         f"Unexpected schema/value type combination: {type(schema).__name__} / {type(value).__name__}"
                     )
             except pa_errors.SchemaErrors as error:
