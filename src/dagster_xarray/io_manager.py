@@ -30,7 +30,11 @@ BLACKLISTED_TO_ZARR_ARGS = (
     "region",
     "store",
 )
-BLACKLISTED_WRITE_ARGS = tuple({*BLACKLISTED_TO_NETCDF_ARGS, *BLACKLISTED_TO_ZARR_ARGS})
+BLACKLISTED_WRITE_ARGS = tuple(
+    {*BLACKLISTED_TO_NETCDF_ARGS, *BLACKLISTED_TO_ZARR_ARGS}
+)
+
+LOCAL_UPATH_PROTOCOLS = ("", "file", "local", "memory")
 
 
 class ZarrMode(StrEnum):
@@ -160,4 +164,7 @@ class ZarrXarrayIOManager(XarrayIOManager):
         obj.drop_encoding().to_zarr(store=path, compute=True, mode=mode, **kwargs)
 
     def _resolve_backend_kwargs(self, path: UPath) -> dict[str, Any]:
-        return {"storage_options": dict(path.storage_options)}
+        opts = dict(path.storage_options)
+        if not opts or path.protocol in LOCAL_UPATH_PROTOCOLS:
+            return {}
+        return {"storage_options": opts}
