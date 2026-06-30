@@ -1,7 +1,7 @@
+import os
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from enum import StrEnum
-import os
 from typing import Any, Literal, TypeIs, cast
 
 import dagster as dg
@@ -94,7 +94,9 @@ class XarrayIOManager(dg.UPathIOManager, ABC):
             if k not in BLACKLISTED_OPEN_DATASET_ARGS
         }
 
-    def _resolve_output_options(self, context: dg.OutputContext) -> dict[str, Any]:
+    def _resolve_output_options(
+        self, context: dg.OutputContext
+    ) -> dict[str, Any]:
         raw = (context.metadata or {}).get("xarray/save", {})
         changes = raw.value if isinstance(raw, dg.MetadataValue) else raw
         return {
@@ -173,7 +175,9 @@ class ZarrXarrayIOManager(XarrayIOManager):
     ) -> None:
         kwargs = self._resolve_output_options(context)
         mode = ZarrMode(kwargs.pop("mode", "w")).value
-        obj.drop_encoding().to_zarr(store=path, compute=True, mode=mode, **kwargs)
+        obj.drop_encoding().to_zarr(
+            store=path, compute=True, mode=mode, **kwargs
+        )
 
     def _resolve_backend_kwargs(self, path: UPath) -> dict[str, Any]:
         opts = dict(path.storage_options)

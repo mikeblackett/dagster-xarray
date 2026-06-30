@@ -28,7 +28,9 @@ def pandera_schema_to_dagster_type(
     assert isinstance(norm_schema, VALID_SCHEMA_CLASSES)
     metadata = _pandera_schema_to_metadata_value(norm_schema)
     type_check_fn = _pandera_schema_to_type_check_fn(norm_schema)
-    typing_type = xr.DataArray if isinstance(schema, pa.DataArraySchema) else xr.Dataset
+    typing_type = (
+        xr.DataArray if isinstance(schema, pa.DataArraySchema) else xr.Dataset
+    )
     return dg.DagsterType(
         type_check_fn=type_check_fn,
         name=name,
@@ -49,7 +51,9 @@ def _extract_name_from_pandera_schema(
         )
     elif isinstance(schema, VALID_SCHEMA_CLASSES):
         return str(
-            schema.title or schema.name or next(_anonymous_schema_name_generator)
+            schema.title
+            or schema.name
+            or next(_anonymous_schema_name_generator)
         )
     return next(_anonymous_schema_name_generator)
 
@@ -89,6 +93,7 @@ def _pandera_schema_to_type_check_fn(
                     success=False,
                     description=f"Unexpected error during validation: {error}",
                 )
+
         else:
             return dg.TypeCheck(
                 success=False,
@@ -97,7 +102,6 @@ def _pandera_schema_to_type_check_fn(
                     f" got {type(value).__name__}."
                 ),
             )
-
         return dg.TypeCheck(success=True)
 
     return type_check_fn
@@ -107,15 +111,13 @@ def _pandera_errors_to_type_check(
     error: pa_errors.SchemaErrors,
 ) -> dg.TypeCheck:
     # TODO: (mike) add metadata to describe the error in the UI
-    return dg.TypeCheck(
-        success=False,
-        description=str(error),
-    )
+    return dg.TypeCheck(success=False, description=str(error))
 
 
 def _pandera_schema_to_metadata_value(
     schema: DagsterPanderaXarraySchema,
 ) -> dg.MetadataValue:
+
     value = schema.to_json()
     if value is None:
         return dg.MetadataValue.null()
