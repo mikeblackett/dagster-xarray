@@ -6,7 +6,7 @@ readme = "README.md"
 authors=[
     {name="Mike Blackett"}
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.13,<3.15"
 dependencies = [
     "dagster>=1.13.11",
     "pandera[xarray]>=0.32.0",
@@ -19,9 +19,11 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "jupyterlab>=4.6.0",
     "pyright>=1.1.411",
     "ruff>=0.15.20",
 ]
 
 [tool.ruff]
 line-length = 79
+
