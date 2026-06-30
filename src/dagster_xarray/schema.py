@@ -1,5 +1,7 @@
-from collections.abc import Callable
 import itertools
+import json
+from collections.abc import Callable
+
 import dagster as dg
 import dagster._check as check
 import pandera.errors as pa_errors
@@ -117,4 +119,5 @@ def _pandera_schema_to_metadata_value(
     value = schema.to_json()
     if value is None:
         return dg.MetadataValue.null()
-    return dg.MetadataValue.json(value)
+    # TODO: (mike) add markdown metadata to describe schema in the UI
+    return dg.MetadataValue.json(json.loads(value))
