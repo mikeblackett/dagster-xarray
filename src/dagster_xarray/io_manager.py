@@ -73,7 +73,19 @@ class XarrayIOManager(dg.UPathIOManager, ABC):
     @abstractmethod
     def engine(self) -> Engine: ...
 
-    def _resolve_input_options(self, context: dg.InputContext) -> dict[str, Any]:
+    def get_metadata(
+        self, context: dg.OutputContext, obj: xr.DataArray | xr.Dataset
+    ) -> dict[str, dg.MetadataValue]:
+        from dask.utils import format_bytes
+
+        return {
+            "bytes": dg.MetadataValue.int(obj.nbytes),
+            "file_size": dg.MetadataValue.text(format_bytes(obj.nbytes)),
+        }
+
+    def _resolve_input_options(
+        self, context: dg.InputContext
+    ) -> dict[str, Any]:
         raw = (context.metadata or {}).get("xarray/open", {})
         changes = raw.value if isinstance(raw, dg.MetadataValue) else raw
         return {
