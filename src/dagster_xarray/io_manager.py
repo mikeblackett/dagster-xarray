@@ -1,9 +1,8 @@
 import os
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from enum import StrEnum
 from typing import Any, Literal, TypeIs, cast
-
 import dagster as dg
 import xarray as xr
 from upath import UPath
@@ -94,6 +93,13 @@ class XarrayIOManager(dg.UPathIOManager, ABC):
             if k not in BLACKLISTED_OPEN_DATASET_ARGS
         }
 
+    def _get_xarray_open_method(
+        self, context: dg.InputContext
+    ) -> Callable[..., xr.DataArray | xr.Dataset]:
+        if context.dagster_type.typing_type is xr.DataArray:
+            return xr.open_dataarray
+        return xr.open_dataset
+
     def _resolve_output_options(
         self, context: dg.OutputContext
     ) -> dict[str, Any]:
@@ -117,14 +123,15 @@ class NetCDFXarrayIOManager(XarrayIOManager):
         self,
         context: dg.InputContext,
         path: UPath,
-    ) -> xr.Dataset:
+    ) -> xr.Dataset | xr.DataArray:
         if not _is_pathlike(path):
             raise NotImplementedError(
                 "NetCDF reads are local-only for now."
                 " Use the zarr manager for object storage."
             )
         kwargs = self._resolve_input_options(context)
-        return xr.open_dataset(path, engine=self.engine, **kwargs)
+        open_xarray = self._get_xarray_open_method(context)
+        return open_xarray(path, engine=self.engine, **kwargs)
 
     def dump_to_path(
         self,
@@ -157,10 +164,11 @@ class ZarrXarrayIOManager(XarrayIOManager):
         self,
         context: dg.InputContext,
         path: UPath,
-    ) -> xr.Dataset:
+    ) -> xr.Dataset | xr.DataArray:
         kwargs = self._resolve_input_options(context)
         backend_kwargs = self._resolve_backend_kwargs(path)
-        return xr.open_dataset(
+        open_xarray = self._get_xarray_open_method(context)
+        return open_xarray(
             str(path),
             engine=self.engine,
             backend_kwargs=backend_kwargs,
