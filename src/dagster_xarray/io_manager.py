@@ -87,7 +87,7 @@ class XarrayIOManager[E: Engine](dg.UPathIOManager, ABC):
         changes = raw.value if isinstance(raw, dg.MetadataValue) else raw
         return {
             k: v
-            for k, v in (self.open_options | changes).items()
+            for k, v in {**self.open_options, **changes}.items()
             if k not in BLACKLISTED_OPEN_DATASET_ARGS
         }
 
@@ -98,7 +98,7 @@ class XarrayIOManager[E: Engine](dg.UPathIOManager, ABC):
         changes = raw.value if isinstance(raw, dg.MetadataValue) else raw
         return {
             k: v
-            for k, v in (self.save_options | changes).items()
+            for k, v in {**self.save_options, **changes}.items()
             if k not in BLACKLISTED_WRITE_ARGS
         }
 
