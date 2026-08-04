@@ -60,7 +60,7 @@ def _storage_options_or_none(path: UPath) -> dict[str, Any] | None:
 
 
 class XarrayIOManager(dg.UPathIOManager, ABC):
-    """An base IOManager for reading and writing xarray Datasets"""
+    """An base IOManager for reading and writing xarray objects"""
 
     open_options: Mapping[str, Any]
     save_options: Mapping[str, Any]
@@ -87,9 +87,10 @@ class XarrayIOManager(dg.UPathIOManager, ABC):
     ) -> dict[str, dg.MetadataValue]:
         from dask.utils import format_bytes
 
+        #
         return {
             "bytes": dg.MetadataValue.int(obj.nbytes),
-            "file_size": dg.MetadataValue.text(format_bytes(obj.nbytes)),
+            "in_memory_size": dg.MetadataValue.text(format_bytes(obj.nbytes)),
         }
 
     def _resolve_input_options(
@@ -103,13 +104,6 @@ class XarrayIOManager(dg.UPathIOManager, ABC):
             if k not in BLACKLISTED_OPEN_DATASET_ARGS
         }
 
-    def _get_xarray_open_method(
-        self, context: dg.InputContext
-    ) -> Callable[..., xr.DataArray | xr.Dataset]:
-        if context.dagster_type.typing_type is xr.DataArray:
-            return xr.open_dataarray
-        return xr.open_dataset
-
     def _resolve_output_options(
         self, context: dg.OutputContext
     ) -> dict[str, Any]:
@@ -120,6 +114,14 @@ class XarrayIOManager(dg.UPathIOManager, ABC):
             for k, v in (self.save_options | changes).items()
             if k not in BLACKLISTED_WRITE_ARGS
         }
+
+    def _get_xarray_open_method(
+        self, context: dg.InputContext
+    ) -> Callable[..., xr.DataArray | xr.Dataset]:
+        typing_type = _unwrap_maybe_dagster_type(context.dagster_type)
+        if typing_type is xr.DataArray:
+            return xr.open_dataarray
+        return xr.open_dataset
 
 
 class NetCDFXarrayIOManager(XarrayIOManager):
