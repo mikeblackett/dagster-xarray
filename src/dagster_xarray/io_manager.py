@@ -69,18 +69,14 @@ class XarrayIOManager(dg.UPathIOManager, ABC):
         self,
         base_path: UPath | None = None,
         engine: Engine | None = None,
-        open_options: Mapping[str, Any] = {},
-        save_options: Mapping[str, Any] = {},
+        open_options: Mapping[str, Any] | None = None,
+        save_options: Mapping[str, Any] | None = None,
     ):
         super().__init__(base_path)
         self._engine: Engine | None = engine
         self.extension = EXTENSION_FOR_ENGINE[self.engine]
-        self.open_options = open_options
-        self.save_options = save_options
-
-    @property
-    @abstractmethod
-    def engine(self) -> Engine: ...
+        self.open_options = open_options or {}
+        self.save_options = save_options or {}
 
     def get_metadata(
         self, context: dg.OutputContext, obj: xr.DataArray | xr.Dataset
