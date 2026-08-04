@@ -29,7 +29,9 @@ def pandera_schema_to_dagster_type(
     metadata = _pandera_schema_to_metadata_value(norm_schema)
     type_check_fn = _pandera_schema_to_type_check_fn(norm_schema)
     typing_type = (
-        xr.DataArray if isinstance(schema, pa.DataArraySchema) else xr.Dataset
+        xr.DataArray
+        if isinstance(norm_schema, pa.DataArraySchema)
+        else xr.Dataset
     )
     return dg.DagsterType(
         type_check_fn=type_check_fn,
