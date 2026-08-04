@@ -33,8 +33,6 @@ BLACKLISTED_WRITE_ARGS = tuple(
     {*BLACKLISTED_TO_NETCDF_ARGS, *BLACKLISTED_TO_ZARR_ARGS}
 )
 
-LOCAL_UPATH_PROTOCOLS = ("", "file", "local", "memory")
-
 
 class ZarrMode(StrEnum):
     CREATE = "w"
@@ -45,8 +43,20 @@ class NetCDFMode(StrEnum):
     CREATE = "w"
 
 
-def _is_pathlike(path: object) -> TypeIs[os.PathLike]:
+def _is_local_path(path: object) -> TypeIs[os.PathLike]:
+    # netcdf4/h5netcdf/scipy need a real OS path;
+    # UPath only implements os.PathLike for local filesystems (upath >= 0.3.0).
     return isinstance(path, os.PathLike)
+
+
+def _unwrap_maybe_dagster_type(obj: dg.DagsterType | type) -> type:
+    if isinstance(obj, dg.DagsterType):
+        return obj.typing_type
+    return obj
+
+
+def _storage_options_or_none(path: UPath) -> dict[str, Any] | None:
+    return dict(path.storage_options) or None
 
 
 class XarrayIOManager(dg.UPathIOManager, ABC):
@@ -124,7 +134,7 @@ class NetCDFXarrayIOManager(XarrayIOManager):
         context: dg.InputContext,
         path: UPath,
     ) -> xr.Dataset | xr.DataArray:
-        if not _is_pathlike(path):
+        if not _is_local_path(path):
             raise NotImplementedError(
                 "NetCDF reads are local-only for now."
                 " Use the zarr manager for object storage."
@@ -139,7 +149,7 @@ class NetCDFXarrayIOManager(XarrayIOManager):
         obj: xr.DataArray | xr.Dataset,
         path: UPath,
     ) -> None:
-        if not _is_pathlike(path):
+        if not _is_local_path(path):
             # TODO: (mike) Writing to remote store needs temp-file staging
             raise NotImplementedError(
                 "NetCDF writes are local-only for now."
@@ -166,7 +176,11 @@ class ZarrXarrayIOManager(XarrayIOManager):
         path: UPath,
     ) -> xr.Dataset | xr.DataArray:
         kwargs = self._resolve_input_options(context)
-        backend_kwargs = self._resolve_backend_kwargs(path)
+        backend_kwargs = (
+            {"storage_options": opts}
+            if (opts := _storage_options_or_none(path))
+            else None
+        )
         open_xarray = self._get_xarray_open_method(context)
         return open_xarray(
             str(path),
@@ -184,11 +198,9 @@ class ZarrXarrayIOManager(XarrayIOManager):
         kwargs = self._resolve_output_options(context)
         mode = ZarrMode(kwargs.pop("mode", "w")).value
         obj.drop_encoding().to_zarr(
-            store=path, compute=True, mode=mode, **kwargs
+            store=str(path),
+            compute=True,
+            mode=mode,
+            storage_options=_storage_options_or_none(path),
+            **kwargs,
         )
-
-    def _resolve_backend_kwargs(self, path: UPath) -> dict[str, Any]:
-        opts = dict(path.storage_options)
-        if not opts or path.protocol in LOCAL_UPATH_PROTOCOLS:
-            return {}
-        return {"storage_options": opts}
