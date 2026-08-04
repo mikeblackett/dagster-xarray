@@ -1,22 +1,14 @@
 import os
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import Callable, Mapping
 from enum import StrEnum
-from typing import Any, Literal, TypeIs, cast
+from typing import Any, Literal, TypeIs
 import dagster as dg
 import xarray as xr
 from upath import UPath
 
 type NetcdfEngine = Literal["netcdf4", "scipy", "h5netcdf"]
 type Engine = NetcdfEngine | Literal["zarr"]
-
-DEFAULT_NETCDF_ENGINE: Engine = "netcdf4"
-EXTENSION_FOR_ENGINE: dict[Engine, str] = {
-    "zarr": ".zarr",
-    "netcdf4": ".nc",
-    "h5netcdf": ".nc",
-    "scipy": ".nc",
-}
 
 BLACKLISTED_OPEN_DATASET_ARGS = ("drop_variables", "engine", "backend_kwargs")
 BLACKLISTED_TO_NETCDF_ARGS = ("compute", "group", "path", "engine")
@@ -59,22 +51,22 @@ def _storage_options_or_none(path: UPath) -> dict[str, Any] | None:
     return dict(path.storage_options) or None
 
 
-class XarrayIOManager(dg.UPathIOManager, ABC):
+class XarrayIOManager[E: Engine](dg.UPathIOManager, ABC):
     """An base IOManager for reading and writing xarray objects"""
 
+    default_engine: E
     open_options: Mapping[str, Any]
     save_options: Mapping[str, Any]
 
     def __init__(
         self,
         base_path: UPath | None = None,
-        engine: Engine | None = None,
+        engine: E | None = None,
         open_options: Mapping[str, Any] | None = None,
         save_options: Mapping[str, Any] | None = None,
     ):
         super().__init__(base_path)
-        self._engine: Engine | None = engine
-        self.extension = EXTENSION_FOR_ENGINE[self.engine]
+        self.engine = self.default_engine if engine is None else engine
         self.open_options = open_options or {}
         self.save_options = save_options or {}
 
@@ -83,7 +75,6 @@ class XarrayIOManager(dg.UPathIOManager, ABC):
     ) -> dict[str, dg.MetadataValue]:
         from dask.utils import format_bytes
 
-        #
         return {
             "bytes": dg.MetadataValue.int(obj.nbytes),
             "in_memory_size": dg.MetadataValue.text(format_bytes(obj.nbytes)),
@@ -120,12 +111,11 @@ class XarrayIOManager(dg.UPathIOManager, ABC):
         return xr.open_dataset
 
 
-class NetCDFXarrayIOManager(XarrayIOManager):
+class NetCDFXarrayIOManager(XarrayIOManager[NetcdfEngine]):
     """An IOManager for reading and writing xarray objects via NetCDF."""
 
-    @property
-    def engine(self) -> Engine:
-        return DEFAULT_NETCDF_ENGINE if self._engine is None else self._engine
+    extension = ".nc"
+    default_engine = "netcdf4"
 
     def load_from_path(
         self,
@@ -155,18 +145,16 @@ class NetCDFXarrayIOManager(XarrayIOManager):
             )
         kwargs = self._resolve_output_options(context)
         mode = NetCDFMode(kwargs.pop("mode", "w")).value
-        engine = cast(NetcdfEngine, self.engine)
         obj.drop_encoding().to_netcdf(
-            path=path, compute=True, engine=engine, mode=mode, **kwargs
+            path=path, compute=True, engine=self.engine, mode=mode, **kwargs
         )
 
 
-class ZarrXarrayIOManager(XarrayIOManager):
+class ZarrXarrayIOManager(XarrayIOManager[Literal["zarr"]]):
     """An IOManager for reading and writing xarray objects via Zarr."""
 
-    @property
-    def engine(self) -> Engine:
-        return "zarr"
+    extension = ".zarr"
+    default_engine = "zarr"
 
     def load_from_path(
         self,
