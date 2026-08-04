@@ -85,7 +85,7 @@ class XarrayIOManager(dg.UPathIOManager, ABC):
     def _resolve_input_options(
         self, context: dg.InputContext
     ) -> dict[str, Any]:
-        raw = (context.metadata or {}).get("xarray/open", {})
+        raw = (context.definition_metadata or {}).get("xarray/open", {})
         changes = raw.value if isinstance(raw, dg.MetadataValue) else raw
         return {
             k: v
@@ -103,7 +103,7 @@ class XarrayIOManager(dg.UPathIOManager, ABC):
     def _resolve_output_options(
         self, context: dg.OutputContext
     ) -> dict[str, Any]:
-        raw = (context.metadata or {}).get("xarray/save", {})
+        raw = (context.definition_metadata or {}).get("xarray/save", {})
         changes = raw.value if isinstance(raw, dg.MetadataValue) else raw
         return {
             k: v
