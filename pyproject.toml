@@ -1,6 +1,6 @@
 [project]
 name = "dagster-xarray"
-version = "0.1.0"
+version = "0.1.1"
 description = "Dagster integration for xarray: IO managers, pandera-backed DagsterTypes, and asset checks."
 readme = "README.md"
 authors=[

@@ -27,17 +27,18 @@ def build_xarray_frequency_check(
     asset: dg.AssetKey | dg.AssetsDefinition | str,
     *,
     freq: str | Sequence[str],
+    name: str = "check_freq",
+    blocking: bool = True,
 ) -> dg.AssetChecksDefinition:
-
     freq = [freq] if isinstance(freq, str) else list(freq)
 
     @dg.asset_check(
-        name="check_freq",
+        name=name,
         description=(
             "Check that the dataset has the correct temporal frequency."
         ),
         asset=asset,
-        blocking=True,
+        blocking=blocking,
     )
     def _check(
         context: dg.AssetCheckExecutionContext,
