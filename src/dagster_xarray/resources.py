@@ -43,7 +43,9 @@ class DaskClusterResource(dg.ConfigurableResource):
 
         context.log.info(self.get_dashboard_log_message())
 
-    def teardown_after_execution(self, context):
+    def teardown_after_execution(
+        self, context: dg.InitResourceContext
+    ) -> None:
         assert context.log
         context.log.info(self.get_teardown_log_message())
         self._client.close()

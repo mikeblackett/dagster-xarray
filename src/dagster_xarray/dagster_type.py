@@ -90,7 +90,7 @@ def _pandera_schema_to_type_check_fn(
                     )
             except pa_errors.SchemaErrors as error:
                 return _pandera_errors_to_type_check(error)
-            except Exception as error:
+            except Exception as error:  # noqa: BLE001
                 return dg.TypeCheck(
                     success=False,
                     description=f"Unexpected error during validation: {error}",

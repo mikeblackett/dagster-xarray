@@ -1,5 +1,5 @@
 # TODO: Use @multi_asset_check once there is a way to pass the asset output to the check function.
-# See: https://github.com/dagster-io/dagster/issues/21772from collections.abc import Sequence
+# See: https://github.com/dagster-io/dagster/issues/21772
 
 from collections.abc import Sequence
 
@@ -49,7 +49,7 @@ def build_xarray_frequency_check(
             validate_freq(obj, freq=freq)
             passed = True
             metadata = {"valid_freqs": ", ".join(freq)}
-        except BaseException as error:
+        except Exception as error:  # noqa: BLE001
             passed = False
             metadata = {"error": str(error)}
         return dg.AssetCheckResult(
