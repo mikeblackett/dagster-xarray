@@ -8,9 +8,10 @@ license-files = ["LICENSE"]
 authors = [
     { name = "Mike Blackett", email = "27811528+mikeblackett@users.noreply.github.com" }
 ]
-requires-python = ">=3.13,<3.15"
+requires-python = ">=3.12,<3.15"
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Framework :: Dagster",

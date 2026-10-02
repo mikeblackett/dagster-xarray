@@ -2,7 +2,7 @@ import os
 from abc import ABC
 from collections.abc import Callable, Mapping
 from enum import StrEnum
-from typing import Any, Literal, TypeIs
+from typing import Any, Literal, TypeGuard
 
 import dagster as dg
 import xarray as xr
@@ -36,7 +36,7 @@ class NetCDFMode(StrEnum):
     CREATE = "w"
 
 
-def _is_local_path(path: object) -> TypeIs[os.PathLike]:
+def _is_local_path(path: object) -> TypeGuard[os.PathLike]:
     # netcdf4/h5netcdf/scipy need a real OS path;
     # UPath only implements os.PathLike for local filesystems (upath >= 0.3.0).
     return isinstance(path, os.PathLike)
