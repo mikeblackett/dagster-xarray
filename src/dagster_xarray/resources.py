@@ -1,16 +1,5 @@
-from typing import Literal, TypedDict
-
 import dagster as dg
 import dask.distributed as dd
-
-
-class DaskLocalClusterKwargs(TypedDict):
-    """Keyword arguments for configuring the DaskLocalCluster."""
-
-    processes: bool
-    n_workers: int | None
-    threads_per_worker: int | None
-    memory_limit: str | float | Literal["auto"]
 
 
 class DaskClusterResource(dg.ConfigurableResource):
@@ -20,14 +9,23 @@ class DaskClusterResource(dg.ConfigurableResource):
         processes (bool, optional): Whether to use processes (True) or threads (False). Defaults to True.
         n_workers (int | None, optional): The number of workers to start.
         threads_per_worker (int | None, optional): The number of threads to use per worker.
+        memory_limit (str, optional): The memory limit per worker, as a
+            dask size string (e.g. "2GB") or "auto". Defaults to the dask
+            default ("auto").
     """
 
     processes: bool = True
     n_workers: int | None = None
     threads_per_worker: int | None = None
+    memory_limit: str | None = None
 
     @property
     def client(self) -> dd.Client:
+        if not hasattr(self, "_client"):
+            raise RuntimeError(
+                "DaskClusterResource is not set up yet. The client is "
+                "only available during asset/job execution."
+            )
         return self._client
 
     def setup_for_execution(self, context: dg.InitResourceContext) -> None:
@@ -38,6 +36,7 @@ class DaskClusterResource(dg.ConfigurableResource):
             n_workers=self.n_workers,
             processes=self.processes,
             threads_per_worker=self.threads_per_worker,
+            memory_limit=self.memory_limit,
         )
         self._client.as_current()
 
@@ -47,6 +46,8 @@ class DaskClusterResource(dg.ConfigurableResource):
         self, context: dg.InitResourceContext
     ) -> None:
         assert context.log
+        if not hasattr(self, "_client"):
+            return
         context.log.info(self.get_teardown_log_message())
         self._client.close()
 
