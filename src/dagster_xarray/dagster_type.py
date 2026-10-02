@@ -9,7 +9,7 @@ import pandera.xarray as pa
 import xarray as xr
 
 type DagsterPanderaXarraySchema = pa.DataArraySchema | pa.DatasetSchema
-type DagsterPanderaXarrayModel = pa.DataArrayModel | pa.DatasetModel
+type DagsterPanderaXarrayModel = type[pa.DataArrayModel | pa.DatasetModel]
 
 VALID_SCHEMA_CLASSES = (pa.DataArraySchema, pa.DatasetSchema)
 VALID_MODEL_CLASSES = (pa.DataArrayModel, pa.DatasetModel)
@@ -52,6 +52,10 @@ def _extract_name_from_schema(
 ) -> str:
     title = schema.title or schema.name
     if title:
+        # `to_json()` only serializes `title`, so stamp `name` onto it to
+        # keep the metadata in sync with the type name.
+        if not schema.title:
+            schema.title = str(title)
         return str(title)
     if fallback_name is not None:
         # `to_schema()` drops the model's `Config.title`, so stamp it back
