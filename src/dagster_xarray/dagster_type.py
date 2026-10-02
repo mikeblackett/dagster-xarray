@@ -25,7 +25,7 @@ def pandera_schema_to_dagster_type(
         if isinstance(schema, type) and issubclass(schema, VALID_MODEL_CLASSES)
         else schema
     )
-    assert isinstance(norm_schema, VALID_SCHEMA_CLASSES)
+    norm_schema = check.inst(norm_schema, VALID_SCHEMA_CLASSES)
     metadata = _pandera_schema_to_metadata_value(norm_schema)
     type_check_fn = _pandera_schema_to_type_check_fn(norm_schema)
     typing_type = (
