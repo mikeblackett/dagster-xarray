@@ -1,7 +1,7 @@
 [project]
 name = "dagster-xarray"
 version = "0.1.0"
-description = "Add your description here"
+description = "Dagster integration for xarray: IO managers, pandera-backed DagsterTypes, and asset checks."
 readme = "README.md"
 authors=[
     {name="Mike Blackett"}
@@ -9,7 +9,9 @@ authors=[
 requires-python = ">=3.13,<3.15"
 dependencies = [
     "dagster>=1.13.11",
+    "dask[distributed]>=2026.4.0",
     "pandera[xarray]>=0.32.0",
+    "universal-pathlib>=0.3.0",
     "xarray[io,parallel]>=2026.4.0",
 ]
 
