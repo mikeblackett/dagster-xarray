@@ -2,7 +2,6 @@ import dagster as dg
 import xarray as xr
 
 import dagster_xarray as dx
-
 from dagster_xarray_example.defs import models
 
 air_temperature_type = dx.pandera_schema_to_dagster_type(

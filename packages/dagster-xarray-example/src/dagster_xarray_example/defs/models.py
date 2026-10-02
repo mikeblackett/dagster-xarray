@@ -1,5 +1,5 @@
-import pandera.xarray as pa
 import numpy as np
+import pandera.xarray as pa
 
 _air_temperature = pa.DataArraySchema(
     dtype=np.float64,

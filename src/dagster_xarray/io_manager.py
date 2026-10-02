@@ -3,6 +3,7 @@ from abc import ABC
 from collections.abc import Callable, Mapping
 from enum import StrEnum
 from typing import Any, Literal, TypeIs
+
 import dagster as dg
 import xarray as xr
 from upath import UPath

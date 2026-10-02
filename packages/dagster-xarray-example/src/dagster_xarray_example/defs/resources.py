@@ -1,7 +1,7 @@
 import dagster as dg
-from dagster_xarray import ZarrXarrayIOManager, DaskClusterResource
 from upath import UPath
 
+from dagster_xarray import DaskClusterResource, ZarrXarrayIOManager
 from dagster_xarray_example.resources import XarrayTutorialIOManager
 
 
