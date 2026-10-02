@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  library:
+    name: library (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v8
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: Ruff
+        run: uv run ruff check src tests
+      - name: Pyright
+        run: uv run pyright
+      - name: Test
+        run: uv run pytest
+
+  example:
+    name: example
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v8
+        with:
+          python-version: "3.14"
+      - name: Install dependencies
+        working-directory: packages/dagster-xarray-example
+        run: uv sync --locked
+      - name: Ruff
+        working-directory: packages/dagster-xarray-example
+        run: uv run ruff check src
+      - name: Check definitions
+        working-directory: packages/dagster-xarray-example
+        run: >
+          uv run python -c
+          "from dagster_xarray_example.definitions import defs;
+          d = defs(); d.get_implicit_global_asset_job_def();
+          print('definitions OK')"
