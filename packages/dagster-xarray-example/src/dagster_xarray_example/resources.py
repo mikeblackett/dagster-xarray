@@ -4,7 +4,8 @@ from typing import Any
 import dagster as dg
 import xarray as xr
 
-CACHE_DIR = Path().cwd().joinpath("data/in")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+CACHE_DIR = PROJECT_ROOT.joinpath("data/in")
 
 
 class XarrayTutorialIOManager(dg.ConfigurableIOManager):

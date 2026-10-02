@@ -3,7 +3,7 @@ name = "dagster_xarray_example"
 requires-python = ">=3.13,<3.15"
 version = "0.1.0"
 dependencies = [
-    "dagster==1.13.11",
+    "dagster>=1.13.11",
     "dagster-xarray",
 ]
 

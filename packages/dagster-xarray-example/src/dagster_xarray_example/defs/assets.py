@@ -23,7 +23,6 @@ air_temperature = dg.AssetSpec(
     kinds={"zarr"},
     dagster_type=air_temperature_type,
     metadata=air_temperature_type.metadata,
-    required_resource_keys={"dask"},
 )
 def monthly_air_temperature(
     context: dg.AssetExecutionContext, air_temperature: xr.Dataset
