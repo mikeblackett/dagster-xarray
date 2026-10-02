@@ -13,19 +13,23 @@ type DagsterPanderaXarrayModel = pa.DataArrayModel | pa.DatasetModel
 
 VALID_SCHEMA_CLASSES = (pa.DataArraySchema, pa.DatasetSchema)
 VALID_MODEL_CLASSES = (pa.DataArrayModel, pa.DatasetModel)
-VALID_XARRAY_CLASSES = (xr.DataArray, xr.Dataset)
 
 
 def pandera_schema_to_dagster_type(
     schema: DagsterPanderaXarraySchema | DagsterPanderaXarrayModel,
 ) -> dg.DagsterType:
-    name = _extract_name_from_pandera_schema(schema)
-    norm_schema = (
-        schema.to_schema()
-        if isinstance(schema, type) and issubclass(schema, VALID_MODEL_CLASSES)
-        else schema
-    )
+    if isinstance(schema, type) and issubclass(schema, VALID_MODEL_CLASSES):
+        fallback_name = str(
+            getattr(schema.Config, "title", None)
+            or getattr(schema.Config, "name", None)
+            or schema.__name__
+        )
+        norm_schema = schema.to_schema()
+    else:
+        fallback_name = None
+        norm_schema = schema
     norm_schema = check.inst(norm_schema, VALID_SCHEMA_CLASSES)
+    name = _extract_name_from_schema(norm_schema, fallback_name)
     metadata = _pandera_schema_to_metadata_value(norm_schema)
     type_check_fn = _pandera_schema_to_type_check_fn(norm_schema)
     typing_type = (
@@ -42,21 +46,18 @@ def pandera_schema_to_dagster_type(
     )
 
 
-def _extract_name_from_pandera_schema(
-    schema: DagsterPanderaXarraySchema | DagsterPanderaXarrayModel,
+def _extract_name_from_schema(
+    schema: DagsterPanderaXarraySchema,
+    fallback_name: str | None,
 ) -> str:
-    if isinstance(schema, type) and issubclass(schema, VALID_MODEL_CLASSES):
-        return str(
-            getattr(schema.Config, "title", None)
-            or getattr(schema.Config, "name", None)
-            or schema.__name__
-        )
-    elif isinstance(schema, VALID_SCHEMA_CLASSES):
-        return str(
-            schema.title
-            or schema.name
-            or next(_anonymous_schema_name_generator)
-        )
+    title = schema.title or schema.name
+    if title:
+        return str(title)
+    if fallback_name is not None:
+        # `to_schema()` drops the model's `Config.title`, so stamp it back
+        # onto the schema to keep the metadata in sync with the type name.
+        schema.title = fallback_name
+        return fallback_name
     return next(_anonymous_schema_name_generator)
 
 
@@ -69,44 +70,39 @@ def _pandera_schema_to_type_check_fn(
     schema: DagsterPanderaXarraySchema,
 ) -> Callable[[dg.TypeCheckContext, object], dg.TypeCheck]:
     def type_check_fn(_context, value: object) -> dg.TypeCheck:
-        if isinstance(value, VALID_XARRAY_CLASSES):
-            try:
-                if isinstance(schema, pa.DataArraySchema):
-                    da = check.inst(
-                        value, xr.DataArray, "Must be a xarray DataArray."
-                    )
-                    # `lazy` instructs pandera to capture every (not just the first) validation error
-                    schema.validate(da, lazy=True)
-                elif isinstance(schema, pa.DatasetSchema):
-                    ds = check.inst(
-                        value,
-                        xr.Dataset,
-                        "Must be a xarray Dataset.",
-                    )
-                    schema.validate(ds, lazy=True)
-                else:
-                    check.failed(
-                        f"Unexpected schema/value type combination: {type(schema).__name__} / {type(value).__name__}"
-                    )
-            except pa_errors.SchemaErrors as error:
-                return _pandera_errors_to_type_check(error)
-            except Exception as error:  # noqa: BLE001
-                return dg.TypeCheck(
-                    success=False,
-                    description=f"Unexpected error during validation: {error}",
+        try:
+            if isinstance(schema, pa.DataArraySchema):
+                if not isinstance(value, xr.DataArray):
+                    return _wrong_kind_type_check(value, expected=xr.DataArray)
+                # `lazy` instructs pandera to capture every (not just the
+                # first) validation error
+                schema.validate(value, lazy=True)
+            elif isinstance(schema, pa.DatasetSchema):
+                if not isinstance(value, xr.Dataset):
+                    return _wrong_kind_type_check(value, expected=xr.Dataset)
+                schema.validate(value, lazy=True)
+            else:
+                check.failed(
+                    f"Unexpected schema type: {type(schema).__name__}"
                 )
-
-        else:
+        except pa_errors.SchemaErrors as error:
+            return _pandera_errors_to_type_check(error)
+        except Exception as error:  # noqa: BLE001
             return dg.TypeCheck(
                 success=False,
-                description=(
-                    f"Must be one of {VALID_XARRAY_CLASSES},"
-                    f" got {type(value).__name__}."
-                ),
+                description=f"Unexpected error during validation: {error}",
             )
         return dg.TypeCheck(success=True)
 
     return type_check_fn
+
+
+def _wrong_kind_type_check(value: object, expected: type) -> dg.TypeCheck:
+    return dg.TypeCheck(
+        success=False,
+        description=f"Must be a xarray {expected.__name__},"
+        f" got {type(value).__name__}.",
+    )
 
 
 def _pandera_errors_to_type_check(
@@ -119,7 +115,6 @@ def _pandera_errors_to_type_check(
 def _pandera_schema_to_metadata_value(
     schema: DagsterPanderaXarraySchema,
 ) -> dg.MetadataValue:
-
     value = schema.to_json()
     if value is None:
         return dg.MetadataValue.null()
